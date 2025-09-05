@@ -1,92 +1,92 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from"./interfaces/IERC20.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
 import { Events } from "./lib/events.sol";
 
 contract TokenContract is IERC20 {
-  
-    string tokenName;
-    string tokenSymbol;
+    string private _name;
+    string private _symbol;
+    uint8 private constant _decimals = 18;
+    uint256 private _totalSupply;
 
-    mapping(address => uint256) balances;
-    mapping (address => mapping(address => uint256)) allowances;
+    mapping(address => uint256) private balances;
+    mapping(address => mapping(address => uint256)) private allowances;
 
-    constructor(string memory _tokenName, string memory _tokenSymbol) {
-      tokenName = _tokenName;
-      tokenSymbol = _tokenSymbol;
+    constructor() {
+        _name = "MyTokenContract"; 
+        _symbol = "MTC";           
     }
 
-    function balanceOf(address tokenHolder) external view returns (uint256) {
-      uint256 balance = balances[tokenHolder];
-      return balance;
-    }
-    
-    function transfer(address recipient, uint256 amount) external {
-      require(recipient != address(0), "Invalid address zero detected");
-      require(amount > 0, "Amount must be greater than zero");
-
-      uint256 balance = this.balanceOf(msg.sender);
-
-      require(balance >= amount, "Insufficient balance");
-
-      balances[msg.sender] -= amount;
-      balances[recipient] += amount;
-
-      emit Events.Transfer(msg.sender, recipient, amount);
-    }
-    function transferFrom(
-        address owner,
-        address spender,
-        uint256 amount
-    ) external {
-      require(owner != address(0), "Invalid address zero");
-      require(spender != address(0), "Invalid address zero");
-      require(amount > 0, "Invalid amount");
-
-      uint256 spenderAllowance = allowances[owner][spender];
-      require(spenderAllowance >= amount, "Insufficient allowance");
-
-      uint256 ownerBalance = this.balanceOf(owner);
-
-      require(ownerBalance >= amount, "Insufficient owner balance");
-
-      allowances[owner][spender] -= amount;
-
-      balances[owner] -= amount;
-      balances[spender] += amount;
-
-      emit Events.TransferFrom(owner, spender, amount);
+    function name() external view override returns (string memory) {
+        return _name;
     }
 
-    function allowance(
-        address owner,
-        address spender
-    ) external view returns (uint256) {
-      require(owner != address(0), "Invalid address zero detected");
-      require(spender != address(0), "Invalid address zero detected");
-
-      uint256 spenderAllowance = allowances[owner][spender];
-      return spenderAllowance;
+    function symbol() external view override returns (string memory) {
+        return _symbol;
     }
 
-    function approve(address spender, uint256 amount) external {
-      require(spender != address(0), "Invalid address zero detected");
-      allowances[msg.sender][spender] += amount;
-
-      emit Events.Approve(msg.sender, spender, amount);
+    function decimals() external pure returns (uint8) {
+        return _decimals;
     }
 
-    function name() external view returns(string memory) {
-      return tokenName;
-    }
-    function symbol() external view returns(string memory) {
-      return tokenSymbol;
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
     }
 
-    function mint(address reciever, uint256 amount) external {
-      require(reciever != address(0), "Invalid address zero detected");
+    function balanceOf(address account) external view override returns (uint256) {
+        return balances[account];
+    }
 
-      balances[reciever] += amount;
+    function transfer(address recipient, uint256 amount) external override returns (bool) {
+        address owner = msg.sender;
+
+        require(recipient != address(0), "ERC20:address cannot be Zero");
+        require(balances[owner] >= amount, "ERC20: insufficient balance");
+
+        balances[owner] -= amount;
+        balances[recipient] += amount;
+
+        emit Events.Transfer(owner, recipient, amount);
+        return true;
+    }
+
+    function allowance(address owner, address spender) external view override returns (uint256) {
+        return allowances[owner][spender];
+    }
+
+    function approve(address spender, uint256 amount) external override returns (bool) {
+        address owner = msg.sender;
+
+        require(spender != address(0), "ERC20: You cannot approve to the zero address");
+
+        allowances[owner][spender] = amount; 
+        emit Events.Approve(owner, spender, amount);
+        return true;
+    }
+
+    function transferFrom(address owner, address recipient, uint256 amount) external override returns (bool) {
+        address spender = msg.sender;
+
+        require(owner != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20:You cannot transfer to the zero address");
+        require(balances[owner] >= amount, "ERC20: insufficient balance");
+        require(allowances[owner][spender] >= amount, "ERC20: insufficient allowance");
+
+        allowances[owner][spender] -= amount;
+        balances[owner] -= amount;
+        balances[recipient] += amount;
+
+        emit Events.TransferFrom(owner, recipient, amount);
+        return true;
+    }
+
+    function mint(address receiver, uint256 amount) external override {
+        require(receiver != address(0), "ERC20:you cannot mint to the zero address");
+
+        balances[receiver] += amount;
+        _totalSupply += amount;
+
+        emit Events.Transfer(address(0), receiver, amount);
     }
 }
