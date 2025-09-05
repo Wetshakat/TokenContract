@@ -5,18 +5,13 @@ import { IERC20 } from "./interfaces/IERC20.sol";
 import { Events } from "./lib/events.sol";
 
 contract TokenContract is IERC20 {
-    string private _name;
-    string private _symbol;
+    string private _name = "MyTokenContract";
+    string private _symbol = "MTC";
     uint8 private constant _decimals = 18;
     uint256 private _totalSupply;
 
     mapping(address => uint256) private balances;
     mapping(address => mapping(address => uint256)) private allowances;
-
-    constructor() {
-        _name = "MyTokenContract"; 
-        _symbol = "MTC";           
-    }
 
     function name() external view override returns (string memory) {
         return _name;
@@ -90,3 +85,4 @@ contract TokenContract is IERC20 {
         emit Events.Transfer(address(0), receiver, amount);
     }
 }
+

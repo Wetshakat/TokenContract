@@ -1,0 +1,45 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-2b0ee05f3b28ac486092d8fd0ec02fa6f3db8fb7",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/tokenContract.sol": "project/contracts/tokenContract.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/IERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ninterface IERC20 {\n    function balanceOf(address tokenHolder) external view returns (uint256);\n    function transfer(address recipient, uint256 amount) external returns (bool);\n    function transferFrom(address owner, address spender, uint256 amount) external returns (bool);\n    function allowance(address owner, address spender) external view returns (uint256);\n    function approve(address spender, uint256 amount) external returns (bool);\n    function name() external view returns (string memory);\n    function symbol() external view returns (string memory);\n    function mint(address receiver, uint256 amount) external;\n}\n"
+      },
+      "project/contracts/lib/events.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nlibrary Events {\n    event Transfer(address indexed sender, address indexed recipient, uint256 amount);\n    event Approve(address indexed owner, address indexed spender, uint256 amount);\n    event TransferFrom(address indexed owner, address indexed spender, uint256 amount);\n}\n"
+      },
+      "project/contracts/tokenContract.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nimport { IERC20 } from \"./interfaces/IERC20.sol\";\nimport { Events } from \"./lib/events.sol\";\n\ncontract TokenContract is IERC20 {\n    string private _name = \"MyTokenContract\";\n    string private _symbol = \"MTC\";\n    uint8 private constant _decimals = 18;\n    uint256 private _totalSupply;\n\n    mapping(address => uint256) private balances;\n    mapping(address => mapping(address => uint256)) private allowances;\n\n    function name() external view override returns (string memory) {\n        return _name;\n    }\n\n    function symbol() external view override returns (string memory) {\n        return _symbol;\n    }\n\n    function decimals() external pure returns (uint8) {\n        return _decimals;\n    }\n\n    function totalSupply() external view returns (uint256) {\n        return _totalSupply;\n    }\n\n    function balanceOf(address account) external view override returns (uint256) {\n        return balances[account];\n    }\n\n    function transfer(address recipient, uint256 amount) external override returns (bool) {\n        address owner = msg.sender;\n\n        require(recipient != address(0), \"ERC20:address cannot be Zero\");\n        require(balances[owner] >= amount, \"ERC20: insufficient balance\");\n\n        balances[owner] -= amount;\n        balances[recipient] += amount;\n\n        emit Events.Transfer(owner, recipient, amount);\n        return true;\n    }\n\n    function allowance(address owner, address spender) external view override returns (uint256) {\n        return allowances[owner][spender];\n    }\n\n    function approve(address spender, uint256 amount) external override returns (bool) {\n        address owner = msg.sender;\n\n        require(spender != address(0), \"ERC20: You cannot approve to the zero address\");\n\n        allowances[owner][spender] = amount; \n        emit Events.Approve(owner, spender, amount);\n        return true;\n    }\n\n    function transferFrom(address owner, address recipient, uint256 amount) external override returns (bool) {\n        address spender = msg.sender;\n\n        require(owner != address(0), \"ERC20: transfer from the zero address\");\n        require(recipient != address(0), \"ERC20:You cannot transfer to the zero address\");\n        require(balances[owner] >= amount, \"ERC20: insufficient balance\");\n        require(allowances[owner][spender] >= amount, \"ERC20: insufficient allowance\");\n\n        allowances[owner][spender] -= amount;\n        balances[owner] -= amount;\n        balances[recipient] += amount;\n\n        emit Events.TransferFrom(owner, recipient, amount);\n        return true;\n    }\n\n    function mint(address receiver, uint256 amount) external override {\n        require(receiver != address(0), \"ERC20:you cannot mint to the zero address\");\n\n        balances[receiver] += amount;\n        _totalSupply += amount;\n\n        emit Events.Transfer(address(0), receiver, amount);\n    }\n}\n\n"
+      }
+    }
+  }
+}
