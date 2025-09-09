@@ -1,0 +1,48 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-971489c1e53ec1e8aa5342dfef075d2bedb46794",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/savingsContract.sol": "project/contracts/savingsContract.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/interfaces/IERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ninterface IERC20 {\n    function balanceOf(address tokenHolder) external view returns (uint256);\n    function transfer(address recipient, uint256 amount) external returns (bool);\n    function transferFrom(address owner, address spender, uint256 amount) external returns (bool);\n    function allowance(address owner, address spender) external view returns (uint256);\n    function approve(address spender, uint256 amount) external returns (bool);\n    function name() external view returns (string memory);\n    function symbol() external view returns (string memory);\n    function mint(address receiver, uint256 amount) external;\n}\n"
+      },
+      "project/contracts/interfaces/IMySaving.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ninterface IMySaving {\n    function deposit(uint256 amount) external;\n    function withdraw(uint256 amount) external;\n    function save(address user) external view returns (uint256);\n    function savingBalance(address user) external view returns (uint256);\n}\n"
+      },
+      "project/contracts/lib/savingsEvent.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nlibrary savingsEvents {\n    event Deposited(address indexed user, uint256 amount);\n    event Withdrawn(address indexed user, uint256 amount);\n\n    function emitDeposit(address user, uint256 amount) internal {\n        emit Deposited(user, amount);\n    }\n\n    function emitWithdraw(address user, uint256 amount) internal {\n        emit Withdrawn(user, amount);\n    }\n}\n"
+      },
+      "project/contracts/savingsContract.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nimport { IERC20 } from \"./interfaces/IERC20.sol\";\nimport { IMySaving } from \"./interfaces/IMySaving.sol\";\nimport { savingsEvents } from \"./lib/savingsEvent.sol\";\n\ncontract savingsContract is IMySaving {\n    IERC20 public immutable token;\n\n    mapping(address => uint256) private balances;\n    uint256 public totalDeposits;\n\n    constructor(address tokenAddress) {\n        require(tokenAddress != address(0), \"token=0\");\n        token = IERC20(tokenAddress);\n    }\n\n    function deposit(uint256 amount) external override {\n        address owner = msg.sender;\n        require(amount > 0, \"amount=0\");\n        require(token.allowance(owner, address(this)) >= amount, \"allowance low\");\n\n        bool success = token.transferFrom(owner, address(this), amount);\n        require(success, \"transferFrom failed\");\n\n        balances[owner] += amount;\n        totalDeposits += amount;\n\n        savingsEvents.emitDeposit(owner, amount);\n    }\n\n    function withdraw(uint256 amount) external override {\n        address owner = msg.sender;\n        require(amount > 0, \"amount=0\");\n        uint256 bal = balances[owner];\n        require(bal >= amount, \"insufficient balance\");\n\n        balances[owner] = bal - amount;\n        totalDeposits -= amount;\n\n        bool success = token.transfer(owner, amount);\n        require(success, \"transfer failed\");\n\n        savingsEvents.emitWithdraw(owner, amount);\n    }\n\n    function save(address user) external view override returns (uint256) {\n        return balances[user];\n    }\n\n    function savingBalance(address user) external view override returns (uint256) {\n        return balances[user];\n    }\n}\n"
+      }
+    }
+  }
+}
